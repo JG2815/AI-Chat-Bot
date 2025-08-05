@@ -1,10 +1,13 @@
 from flask import Flask, render_template, request, jsonify
 import requests
 import os
+from dotenv import load_dotenv
+
+load_dotenv()  # Load environment variables
 
 app = Flask(__name__)
 
-# Use environment variable for API URL with fallback
+# Use environment variable for API URL
 API_URL = os.getenv('API_URL', 'http://localhost:1234/v1/chat/completions')
 
 # Initialize chat histories for different sessions
@@ -69,5 +72,5 @@ def chat():
         return jsonify({"error": f"Unexpected error: {str(e)}"})
 
 if __name__ == '__main__':
-    port = int(os.getenv('PORT', 5000))
+    port = int(os.getenv('PORT', 10000))
     app.run(host='0.0.0.0', port=port)
