@@ -1,10 +1,11 @@
 from flask import Flask, render_template, request, jsonify
 import requests
+import os
 
 app = Flask(__name__)
 
-# Your local LM Studio endpoint
-API_URL = "http://localhost:1234/v1/chat/completions"
+# Use environment variable for API URL with fallback
+API_URL = os.getenv('API_URL', 'http://localhost:1234/v1/chat/completions')
 
 # Initialize chat histories for different sessions
 chat_sessions = {}
@@ -68,4 +69,5 @@ def chat():
         return jsonify({"error": f"Unexpected error: {str(e)}"})
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    port = int(os.getenv('PORT', 5000))
+    app.run(host='0.0.0.0', port=port)
