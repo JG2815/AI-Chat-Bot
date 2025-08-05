@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>AI Chat Bot</title>
+  <link rel="stylesheet" href="style.css"/>
+  <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            margin: 0;
+            padding: 0;
+        }
+  .chat-container {
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .welcome-message {
+            text-align: center;
+            margin-bottom: 20px;
+            color: #333;
+            font-size: 1.2em;
+        }
+        .persona-input {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 20px;
+            display: flex;
+            gap: 10px;
+        }
+        .chat-messages {
+            height: 400px;
+            overflow-y: auto;
+            border: 1px solid #ccc;
+            padding: 10px;
+            margin-bottom: 10px;
+        }
+        .message {
+            margin: 10px 0;
+            padding: 10px;
+            border-radius: 5px;
+        }
+        .user-message {
+            background-color: #e3f2fd;
+            margin-left: 20%;
+        }
+        .bot-message {
+            background-color: #f5f5f5;
+            margin-right: 20%;
+        }
+        .input-area {
+            display: flex;
+            gap: 10px;
+        }
+        button {
+            padding: 10px 20px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        button:disabled {
+            background-color: #cccccc;
+        }
+        input[type="text"] {
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        
+        .button-container {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        
+        .new-chat-btn {
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        
+        .new-chat-btn:hover {
+            background-color: #45a049;
+        }
+      </style>
+</head>
+<body>
+    <div class="chat-container">
+        <div class="button-container">
+            <button class="new-chat-btn" onclick="startNewChat()">New Chat</button>
+        </div>
+        <div class="persona-input">
+            <input type="text" id="personaInput" placeholder="Describe the chatbot's personality..." style="width: 80%;">
+            <button onclick="startChat()" id="startButton">Set Personality</button>
+        </div>
+        <div class="chat-messages" id="chatMessages"></div>
+        <div class="input-area">
+            <input type="text" id="userInput" placeholder="Type your message..." style="flex-grow: 1;" disabled>
+            <button onclick="sendMessage()" id="sendButton" disabled>Send</button>
+        </div>
+    </div>
+
+    <script>
+        let sessionId = null;
+        let personalitySet = false;
+        
+        function startChat() {
+            const persona = document.getElementById('personaInput').value.trim();
+            if (!persona) {
+                alert('Please enter who you want to talk to first!');
+                return;
+            }
+            
+            sessionId = Date.now().toString();
+            personalitySet = true;
+            
+            // Disable personality input and enable chat
+            document.getElementById('userInput').disabled = false;
+            document.getElementById('sendButton').disabled = false;
+            document.getElementById('personaInput').disabled = true;
+            document.getElementById('startButton').disabled = true;
+            
+            // Send initial message to set up personality
+            fetch('/chat', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    message: `Hello, are you really ${persona}?`,
+                    session_id: sessionId,
+                    persona: persona
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    displayMessage('Error: ' + data.error, 'bot-message');
+                } else {
+                    displayMessage(data.response, 'bot-message');
+                }
+            });
+        }
+
+        function sendMessage() {
+            const input = document.getElementById('userInput');
+            const message = input.value.trim();
+            if (!message || !personalitySet) return;
+
+            displayMessage(message, 'user-message');
+            input.value = '';
+
+            fetch('/chat', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    message: message,
+                    session_id: sessionId
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    displayMessage('Error: ' + data.error, 'bot-message');
+                } else {
+                    displayMessage(data.response, 'bot-message');
+                }
+            })
+            .catch(error => {
+                displayMessage('Error: ' + error, 'bot-message');
+            });
+        }
+
+        function displayMessage(message, className) {
+            const chatMessages = document.getElementById('chatMessages');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = 'message ' + className;
+            messageDiv.textContent = message;
+            chatMessages.appendChild(messageDiv);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        // Allow sending message with Enter key
+        document.getElementById('userInput').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                sendMessage();
+            }
+        });
+        
+        function startNewChat() {
+            // Clear chat history
+            document.getElementById('chatMessages').innerHTML = '';
+            
+            // Enable personality input
+            document.getElementById('personaInput').disabled = false;
+            document.getElementById('personaInput').value = '';
+            
+            // Disable chat input until new personality is set
+            document.getElementById('userInput').disabled = true;
+            document.getElementById('sendButton').disabled = true;
+            
+            // Reset session
+            sessionId = null;
+            
+            // Show personality input
+            document.getElementById('personaInput').focus();
+        }
+    </script>
+</body>
+</html>
